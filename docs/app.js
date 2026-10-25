@@ -1,4 +1,5 @@
 import * as THREE from './vendor/three.js';
+import { PeerTransport } from './peer-transport.js';
 const $=id=>document.getElementById(id);
 let socket, myId, state, lastEvent, wasPlaying=false, sounds=false, audio, toastTimer;
 const keys=new Set(), pointers=new Map(),avatars=new Map();
@@ -42,6 +43,7 @@ function beep(freq=600){if(!sounds)return;try{audio ||= new (window.AudioContext
 function send(m){if(socket?.readyState===WebSocket.OPEN)socket.send(JSON.stringify(m));}
 function reset(){myId=null;state=null;wasPlaying=false;keys.clear();pointers.clear();$('landing').hidden=false;$('scene-caption').hidden=false;$('footer').hidden=false;$('game-ui').hidden=true;$('results').hidden=true;document.body.classList.remove('playing');for(const a of avatars.values())disposeAvatar(a);avatars.clear();demos.forEach(a=>a.g.visible=true);$('create').disabled=false;$('join').disabled=false;}
 const config=window.NEON_TAG_CONFIG||{};
+const usePeer=config.transport==='peer';
 let backend=config.serverUrl||'', reconnectTimer;
 try{backend=localStorage.getItem('neon-backend:'+location.pathname)||backend;}catch{}
 function backendSocketUrl(value){
@@ -52,16 +54,17 @@ function backendSocketUrl(value){
 }
 function connect(){
   clearTimeout(reconnectTimer);
-  if(!backend&&config.requireBackend){$('connection').textContent='サーバー未設定';$('create').disabled=true;$('join').disabled=true;$('server-settings').open=true;return;}
-  let address;try{address=backendSocketUrl(backend);}catch(e){toast(e.message);return;}
+  if(!usePeer&&!backend&&config.requireBackend){$('connection').textContent='サーバー未設定';$('create').disabled=true;$('join').disabled=true;$('server-settings').open=true;return;}
+  let address;try{if(!usePeer)address=backendSocketUrl(backend);}catch(e){toast(e.message);return;}
   $('connection').textContent='接続中';$('create').disabled=true;$('join').disabled=true;
-  const previous=socket,ws=new WebSocket(address);socket=ws;previous?.close();
+  const previous=socket,ws=usePeer?new PeerTransport(config.peerOptions||{}):new WebSocket(address);socket=ws;previous?.close();
   ws.addEventListener('open',()=>{if(socket!==ws)return;$('connection').textContent='ONLINE';$('create').disabled=false;$('join').disabled=false;});
-  ws.addEventListener('close',()=>{if(socket!==ws)return;const hadRoom=!!myId;reset();$('connection').textContent='再接続中';$('create').disabled=true;$('join').disabled=true;if(hadRoom)toast('接続が切れました。再接続後にルームへ入り直してください');reconnectTimer=setTimeout(connect,2500);});
+  ws.addEventListener('close',()=>{if(socket!==ws)return;const hadRoom=!!myId;reset();$('connection').textContent='再接続中';$('create').disabled=true;$('join').disabled=true;if(hadRoom)toast('接続が切れました。再接続後にルームへ入り直してください');if(!usePeer)reconnectTimer=setTimeout(connect,2500);else{$('connection').textContent='接続できません';$('error').textContent='接続できません。ページを再読み込みするか、別のWi-Fiで試してください';}});
   ws.addEventListener('error',()=>{if(socket===ws)$('connection').textContent='接続を確認中';});
   ws.addEventListener('message',({data})=>{if(socket!==ws)return;const m=JSON.parse(data);if(m.type==='error'){$('error').textContent=m.message;toast(m.message);$('create').disabled=false;$('join').disabled=false;}if(m.type==='welcome'){myId=m.id;$('landing').hidden=true;$('scene-caption').hidden=true;$('footer').hidden=true;$('game-ui').hidden=false;document.body.classList.add('playing');demos.forEach(a=>a.g.visible=false);const url=new URL(location.href);url.searchParams.set('room',m.code);history.replaceState(null,'',url);}if(m.type==='state')renderState(m);if(m.type==='left'){reset();history.replaceState(null,'',location.pathname);}});
 }
-$('server-settings').hidden=!config.requireBackend;
+$('server-settings').hidden=usePeer||!config.requireBackend;
+$('peer-note').hidden=!usePeer;
 $('server-url').value=backend;
 $('server-form').onsubmit=e=>{e.preventDefault();const value=$('server-url').value.trim();if(!value){toast('ゲームサーバーのURLを入力してください');return;}try{backendSocketUrl(value);}catch(error){toast(error.message);return;}backend=value;try{localStorage.setItem('neon-backend:'+location.pathname,value);}catch{}connect();};
 function enter(type){if(socket?.readyState!==WebSocket.OPEN){toast('サーバーに接続中です');return;}try{localStorage.setItem('neon-name',$('name').value);}catch{}$('error').textContent='';$('create').disabled=true;$('join').disabled=true;send({type,name:$('name').value,code:$('code').value});}
