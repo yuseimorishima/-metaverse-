@@ -8,7 +8,8 @@
     "dev": "node --watch server.js",
     "test": "node --test",
     "build": "node scripts/build-pages.js",
-    "test:browser": "npm run build && node scripts/check-peer.mjs"
+    "test:browser": "npm run build && node scripts/check-peer.mjs",
+    "test:school": "npm run build && node scripts/check-school.mjs"
   },
   "dependencies": {
     "peerjs": "^1.5.5",

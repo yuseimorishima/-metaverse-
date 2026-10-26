@@ -1,4 +1,5 @@
-export const OBSTACLES = [ [-7,-6,4,3], [7,6,4,3], [-7,7,3,4], [7,-7,3,4], [0,0,3,3] ];
+import {OBSTACLES,SPAWNS,canStand} from './school-map.js';
+export {OBSTACLES};
 const COLORS = ['#b49aff','#64ebda','#ffcc75','#ff88ba','#82baff'];
 const ROUND_MS = 120000;
 function randomUUID(){return globalThis.crypto.randomUUID();}
@@ -23,8 +24,8 @@ export function createGameHub({roundMs=ROUND_MS,send,makeCode=roomCode}={}){
         else{room=rooms.get(String(m.code||'').trim().toUpperCase());if(!room){send(ws,{type:'error',message:'ルームが見つかりません。コードを確認してください'});return;}}
         if(room.players.size>=5){send(ws,{type:'error',message:'このルームは満員です（最大5人）'});return;}
         if(room.phase==='playing'){send(ws,{type:'error',message:'対戦中です。ラウンド終了後に参加してください'});return;}
-        const id=randomUUID();const slot=[0,1,2,3,4].find(i=>![...room.players.values()].some(p=>p.slot===i));const a=slot*Math.PI*2/5;
-        const p={id,slot,name:String(m.name||'ゲスト').replace(/[\x00-\x1f]/g,'').trim().slice(0,12)||'ゲスト',color:COLORS[slot],x:Math.cos(a)*11,z:Math.sin(a)*11,angle:0,boost:0,speed:0,score:0,tags:0,input:{x:0,z:0},lastTap:0,lastInput:now,ws};
+        const id=randomUUID();const slot=[0,1,2,3,4].find(i=>![...room.players.values()].some(p=>p.slot===i));
+        const p={id,slot,name:String(m.name||'ゲスト').replace(/[\x00-\x1f]/g,'').trim().slice(0,12)||'ゲスト',color:COLORS[slot],x:SPAWNS[slot].x,z:SPAWNS[slot].z,angle:0,boost:0,speed:0,score:0,tags:0,input:{x:0,z:0},lastTap:0,lastInput:now,ws};
         room.players.set(id,p);room.host ||= id;ws.room=room.code;ws.pid=id;send(ws,{type:'welcome',id,code:room.code});event(room,`${p.name} が参加しました`);broadcast(room);return;
       }
       const room=rooms.get(ws.room),p=room?.players.get(ws.pid);if(!p)return;
@@ -34,13 +35,13 @@ export function createGameHub({roundMs=ROUND_MS,send,makeCode=roomCode}={}){
       if(m.type==='start'&&room.host===p.id&&room.phase!=='playing'){
         if(room.players.size<2){send(ws,{type:'error',message:'開始には2人以上必要です。友達を招待しましょう'});return;}
         room.phase='playing';room.ends=now+roundMs;room.safeUntil=now+4000;room.tagger=[...room.players.keys()][Math.floor(Math.random()*room.players.size)];
-        let i=0;for(const v of room.players.values()){const a=i++*Math.PI*2/room.players.size;Object.assign(v,{x:Math.cos(a)*11,z:Math.sin(a)*11,score:0,tags:0,boost:0,input:{x:0,z:0}});}
+        let i=0;for(const v of room.players.values()){const spawn=SPAWNS[i++];Object.assign(v,{x:spawn.x,z:spawn.z,score:0,tags:0,boost:0,input:{x:0,z:0}});}
         event(room,'スタート！光るリングのプレイヤーが鬼');broadcast(room);
       }
 
   }
   const dt=1/30;
-  function valid(x,z){return Math.abs(x)<14.4&&Math.abs(z)<14.4&&!OBSTACLES.some(([ox,oz,w,d])=>Math.abs(x-ox)<w/2+0.48&&Math.abs(z-oz)<d/2+0.48);}
+  const valid=canStand;
   function tick(){
     const now=Date.now();for(const room of rooms.values()){
       for(const p of room.players.values()){
