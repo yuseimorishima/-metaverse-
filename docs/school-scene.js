@@ -1,8 +1,8 @@
 import * as THREE from './vendor/three.js';
-import {SOLIDS,DECOR,ROOMS,DOORS,CORRIDORS,PILOTI,COURTYARD,YARD,WALKWAYS,TREES} from './school-map.js?v=8';
-import {createSpawnGuide,createFloorGuide} from './spawn-guide.js?v=8';
-import {createSchoolMaterials} from './school-materials.js?v=8';
-import {FLOORS,STAIR,UPPER_ROOMS,UPPER_SOLIDS,UPPER_DECOR,UPPER_DOORS,UPPER_CORRIDORS} from './school-floors.js?v=8';
+import {SOLIDS,DECOR,ROOMS,DOORS,CORRIDORS,PILOTI,COURTYARD,YARD,WALKWAYS,TREES} from './school-map.js?v=9';
+import {createSpawnGuide,createFloorGuide} from './spawn-guide.js?v=9';
+import {createSchoolMaterials} from './school-materials.js?v=9';
+import {FLOORS,STAIR,UPPER_ROOMS,UPPER_SOLIDS,UPPER_DECOR,UPPER_DOORS} from './school-floors.js?v=9';
 
 export function createSchool(scene){
  const group=new THREE.Group();group.name='takehaya-school';scene.add(group);const materials=createSchoolMaterials(),batches=new Map();
@@ -76,7 +76,7 @@ export function createSchool(scene){
  for(const door of [...DOORS,...UPPER_DOORS]){elevation=door.base||0;const alongX=door.axis==='x',half=door.width/2;
   for(const side of [-1,1])box(door.x+(alongX?side*(half+.04):0),1.58,door.z+(alongX?0:side*(half+.04)),alongX?.08:.36,3.16,alongX?.36:.08,'blackMetal');
   box(door.x,3.17,door.z,alongX?door.width+.16:.36,.09,alongX?.36:door.width+.16,'blackMetal');
-  if(door.label)sign(door.label,door.x+(alongX?0:.22),3.48,door.z+(alongX?.22:0),alongX?0:Math.PI/2,Math.min(door.width,2.6),.32);
+  if(door.label)for(const side of [-1,1])sign(door.label,door.x+(alongX?0:side*.22),3.48,door.z+(alongX?side*.22:0),alongX?(side===1?0:Math.PI):side*Math.PI/2,Math.min(door.width,2.6),.32);
  }elevation=0;
  for(const r of ROOMS.filter(r=>r.kind!=='gym')){
   for(const dx of [-r.w*.25,r.w*.25])for(const dz of [-2,2]){box(r.x+dx,3.7,r.z+dz,1.35,.08,.24,'metal');box(r.x+dx,3.65,r.z+dz,1.26,.025,.18,'lamp');}
@@ -95,6 +95,7 @@ export function createSchool(scene){
   if(f.id<5){box(-6,3.64,-11.5,72,.08,13);box(-34,3.64,-32.5,16,.08,29);}
   else{box(-9,3.64,-11.5,32,.08,13);box(-9,3.74,-11.5,32.3,.2,13.3,'concrete');box(-33,.03,-33,9,.06,18,'concrete');}
   for(const r of UPPER_ROOMS.filter(r=>r.floor===f.id)){
+   if(r.grade)sign('中学'+r.grade+'年 '+r.name,r.x,2.85,r.z-r.d/2+.22,0,3,.32,f.color,'#ffffff');
    if(['art','media','meeting','trainee','group'].includes(r.kind))box(r.x,.018,r.z,r.w-.3,.035,r.d-.3,r.kind==='media'?'carpet':'floor');
    for(const dx of [-r.w*.24,r.w*.24])for(const dz of [-r.d*.25,r.d*.25]){box(r.x+dx,3.48,r.z+dz,1.2,.06,.22,'metal');box(r.x+dx,3.44,r.z+dz,1.1,.025,.16,'lamp');}
    if(!['office','staff','infirmary','media','lounge'].includes(r.kind)){

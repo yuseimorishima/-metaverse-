@@ -1,7 +1,7 @@
 // Official reference: https://www2.u-gakugei.ac.jp/~takechu/building-info
 // Room names, floor assignments, L-shaped massing and turf are referenced;
 // dimensions, door positions and room order are an approximation for this game.
-import {FLOORS,STAIR,UPPER_SOLIDS,UPPER_ROOMS,UPPER_CORRIDORS,floorAtHeight,inStairFootprint,stairSurfaces,onUpperFloor} from './school-floors.js?v=8';
+import {FLOORS,STAIR,UPPER_SOLIDS,UPPER_ROOMS,UPPER_CORRIDORS,floorAtHeight,inStairFootprint,stairSurfaces,onUpperFloor} from './school-floors.js?v=9';
 export {FLOORS,STAIR,UPPER_SOLIDS,UPPER_ROOMS,UPPER_CORRIDORS,floorAtHeight};
 export const BOUNDS={minX:-72,maxX:72,minZ:-90,maxZ:38};
 export const SPAWNS=[{x:0,z:12},{x:3,z:14},{x:-3,z:14},{x:6,z:12},{x:-6,z:12}];

@@ -42,7 +42,7 @@ test('every upper-floor doorway and room is reachable from its staircase landing
   for(let i=0;i<queue.length;i++){const [x,z]=queue[i];for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,nz=z+dz,key=nx+','+nz;if(!visited.has(key)&&canStand(nx,nz,floor.y)){visited.add(key);queue.push([nx,nz]);}}}
   for(const r of UPPER_ROOMS.filter(r=>r.floor===floor.id)){
    assert.ok(canStand(r.doorX,r.doorZ,floor.y),floor.id+'F '+r.name+' door');
-   const x=Math.round(r.doorX+(r.kind==='media'||r.kind==='lounge'?1:0)),z=Math.round(r.doorZ+(r.kind==='media'||r.kind==='lounge'?0:-1));
+   const x=Math.round(r.doorX+(r.doorAxis==='z'?1:0)),z=Math.round(r.doorZ+(r.doorAxis==='z'?0:-1));
    assert.ok(visited.has(x+','+z),floor.id+'F '+r.name+' must be reachable');
   }
   for(const d of UPPER_DOORS.filter(d=>d.floor===floor.id))for(const offset of [-.8,0,.8])assert.ok(canStand(d.x+(d.axis==='z'?offset:0),d.z+(d.axis==='x'?offset:0),floor.y),d.floor+'F '+d.label+' approach '+offset);
@@ -67,10 +67,18 @@ test('tagging respects height, and a new round resets players from upper floors'
  room.phase='finished';b.y=15.4;hub.message(clients[0],{type:'start'});for(const p of room.players.values()){assert.equal(p.y,0);assert.equal(p.floor,1);}
 });
 
-test('floor assignments follow the published guide',()=>{
- const names=floor=>UPPER_ROOMS.filter(r=>r.floor===floor&&r.kind!=='lounge').map(r=>r.name);
- assert.deepEqual(names(2),['事務室','リソースルーム','保健体育室','被服室','保健室','調理室','1学年教室','職員室']);
- assert.deepEqual(names(3),['物理化学室','科学実験室','生物地学室','Dルーム','2学年教室','メディアセンター']);
- assert.deepEqual(names(4),['英語室','美術室','グループ学習室','社会科室','視聴覚室','3学年教室']);
+test('middle-school grades have four separate reachable homerooms and keep their special rooms',()=>{
+ for(const grade of [1,2,3]){
+  const classes=UPPER_ROOMS.filter(r=>r.grade===grade);
+  assert.deepEqual(classes.map(r=>r.name),['A','B','C','D'].map(letter=>grade+letter));
+  assert.ok(classes.every(r=>r.floor===grade+1&&r.kind==='classroom'));
+  const y=FLOORS[grade].y;assert.ok(!canStand(-32.3,-39.75,y),'a solid partition separates A and B');assert.ok(canStand(-40.3,-39.75,y),'the corridor passes that partition');
+ }
+ assert.equal(UPPER_ROOMS.filter(r=>r.kind==='classroom').length,12);
+ assert.ok(UPPER_ROOMS.every(r=>r.kind!=='lounge'),'generic shared rooms are replaced by middle-school homerooms');
+ const names=floor=>UPPER_ROOMS.filter(r=>r.floor===floor&&!r.grade).map(r=>r.name);
+ assert.deepEqual(names(2),['事務室','リソースルーム','保健体育室','被服室','保健室','調理室','職員室']);
+ assert.deepEqual(names(3),['物理化学室','科学実験室','生物地学室','Dルーム','メディアセンター']);
+ assert.deepEqual(names(4),['英語室','美術室','グループ学習室','社会科室','視聴覚室']);
  assert.deepEqual(names(5),['実習生室','会議室']);
 });

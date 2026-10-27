@@ -1,4 +1,4 @@
-import {OBSTACLES,SPAWNS,walkHeight,floorAtHeight} from './school-map.js?v=8';
+import {OBSTACLES,SPAWNS,walkHeight,floorAtHeight} from './school-map.js?v=9';
 export {OBSTACLES};
 const COLORS = ['#b49aff','#64ebda','#ffcc75','#ff88ba','#82baff'];
 const ROUND_MS = 120000;

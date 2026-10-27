@@ -14,10 +14,12 @@ export const UPPER_CORRIDORS=FLOORS.slice(1).flatMap(f=>[
  {floor:f.id,base:f.y,x:-40.3,z:-27.7,w:3.4,d:38.6}
 ]);
 export const FLOOR_FOOTPRINTS=[{x:-6,z:-11.5,w:72,d:13},{x:-34,z:-32.5,w:16,d:29},{x:26,z:-3.5,w:8,d:3}];
+// The user confirmed class names 1A–1D; use the same A–D scheme for grades 2–3.
+export const GRADE_CLASSES=[1,2,3].flatMap(grade=>['A','B','C','D'].map(letter=>({grade,name:grade+letter,floor:grade+1})));
 const rowDefinitions={
- 2:[['事務室','office'],['リソースルーム','resource'],['保健体育室','pe'],['被服室','sewing'],['保健室','infirmary'],['調理室','cooking'],['1学年教室','classroom'],['職員室','staff']],
- 3:[['物理化学室','physics'],['科学実験室','laboratory'],['生物地学室','biology'],['Dルーム','d-room'],['2学年教室','classroom']],
- 4:[['英語室','english'],['美術室','art'],['グループ学習室','group'],['社会科室','social'],['視聴覚室','audiovisual'],['3学年教室','classroom']]
+ 2:[['事務室','office'],['リソースルーム','resource'],['保健体育室','pe'],['被服室','sewing'],['保健室','infirmary'],['調理室','cooking'],['職員室','staff']],
+ 3:[['物理化学室','physics'],['科学実験室','laboratory'],['生物地学室','biology'],['Dルーム','d-room'],['メディアセンター','media']],
+ 4:[['英語室','english'],['美術室','art'],['グループ学習室','group'],['社会科室','social'],['視聴覚室','audiovisual']]
 };
 function solid(f,x,z,w,d,h=.8,kind='desk',y=h/2){const b={floor:f.id,base:f.y,x,z,w,d,h,y,kind};UPPER_SOLIDS.push(b);return b;}
 function wallLine(f,axis,fixed,start,end,openings=[],windows=false,h=3.6){
@@ -30,7 +32,8 @@ function wallLine(f,axis,fixed,start,end,openings=[],windows=false,h=3.6){
 }
 function furniture(f,r){
  const desks=(cols,rows,kind='desk')=>{for(const dx of cols)for(const dz of rows){solid(f,r.x+dx,r.z+dz,.85,.6,.73,kind);solid(f,r.x+dx,r.z+dz+.8,.46,.44,.5,'chair');}};
- if(['classroom','english','social','audiovisual'].includes(r.kind))desks([-2.4,0,2.4],[-2,0,2]);
+ if(r.kind==='classroom')desks([-3.3,-1.1,1.1,3.3],[-1.8,0,1.8]);
+ else if(['english','social','audiovisual'].includes(r.kind))desks([-2.4,0,2.4],[-2,0,2]);
  else if(['physics','laboratory','biology'].includes(r.kind)){
   for(const dx of [-3.6,0,3.6])for(const dz of [-2,1])solid(f,r.x+dx,r.z+dz,2.1,1.2,.85,'lab-table');
   solid(f,r.x,r.z-r.d/2+.7,r.w-2,.65,.9,'lab-counter');
@@ -47,10 +50,8 @@ function furniture(f,r){
   for(const dx of [-2,2])for(const dz of [-2,1])solid(f,r.x+dx,r.z+dz,1.7,.85,.76,'office-desk');
   solid(f,r.x,r.z-r.d/2+.45,r.w-1,.6,1.9,'cabinet');
  }else if(r.kind==='media'){
-  for(const x of [r.x-3.6,r.x,r.x+3.6])for(const z of [r.z-9,r.z+9])solid(f,x,z,.8,6,2,'bookshelf');
-  for(const x of [r.x-2.8,r.x+2.8])for(const z of [r.z-3,r.z+3])solid(f,x,z,2.4,1.3,.76,'desk');
- }else if(r.kind==='lounge'){
-  for(const z of [r.z-8,r.z,r.z+8]){solid(f,r.x-3,z,2.4,.9,.8,'sofa');solid(f,r.x+1,z,2,1,.55,'desk');}
+  for(const x of [r.x-3.6,r.x,r.x+3.6])solid(f,x,r.z-1.1,.8,4.6,2,'bookshelf');
+  for(const x of [r.x-3.3,r.x+3.3])solid(f,x,r.z+2.6,2.2,1.2,.76,'desk');
  }
 }
 for(const f of FLOORS.slice(1)){
@@ -74,8 +75,13 @@ for(const f of FLOORS.slice(1)){
  wallLine(f,'z',-26,-47,-18,[],f.id!==5,h);
  if(f.id===5){wallLine(f,'x',-18,-26,-25,[],false,h);wallLine(f,'x',-18,7,30,[],false,h);}
  else{
-  const west={floor:f.id,base:f.y,name:f.id===3?'メディアセンター':f.id===2?'共用学習スペース':'共用ラウンジ',kind:f.id===3?'media':'lounge',x:-32.3,z:-32.5,w:12.6,d:29,doorX:-38.6,doorZ:-32};
-  UPPER_ROOMS.push(west);wallLine(f,'z',-38.6,-47,-18,[{at:-32,width:2.4,label:west.name}]);wallLine(f,'z',-38.6,-18,-8.4);
+  // Four separate homerooms per grade, connected to the west corridor.
+  const classes=GRADE_CLASSES.filter(c=>c.floor===f.id),depth=29/classes.length;
+  const classrooms=classes.map((c,i)=>({...c,base:f.y,kind:'classroom',x:-32.3,z:-47+depth*(i+.5),w:12.6,d:depth,doorAxis:'z',doorX:-38.6,doorZ:-47+depth*(i+.5)}));
+  UPPER_ROOMS.push(...classrooms);
+  wallLine(f,'z',-38.6,-47,-18,classrooms.map(r=>({at:r.doorZ,width:2.4,label:r.name})));
+  for(const r of classrooms.slice(0,-1))wallLine(f,'x',r.z+r.d/2,-38.6,-26);
+  wallLine(f,'z',-38.6,-18,-8.4);
  }
  // The stair enclosure has no slabs across its flights, only level landings.
  wallLine(f,'z',22,-5,8,[],true);wallLine(f,'z',30,-5,8,[],true);wallLine(f,'x',8,22,30,[],true);

@@ -1,8 +1,8 @@
 import * as THREE from './vendor/three.js';
-import { PeerTransport } from './peer-transport.js?v=8';
-import { createSchool } from './school-scene.js?v=8';
-import { schoolSky } from './school-materials.js?v=8';
-import { createGameHub } from './game-core.js?v=8';
+import { PeerTransport } from './peer-transport.js?v=9';
+import { createSchool } from './school-scene.js?v=9';
+import { schoolSky } from './school-materials.js?v=9';
+import { createGameHub } from './game-core.js?v=9';
 const $=id=>document.getElementById(id);
 let socket, myId, state, lastEvent, wasPlaying=false, sounds=false, audio, toastTimer, eventTimer, exploring=false;
 let yaw=0,pitch=0;
