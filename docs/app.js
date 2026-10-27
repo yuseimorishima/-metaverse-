@@ -1,8 +1,8 @@
 import * as THREE from './vendor/three.js';
-import { PeerTransport } from './peer-transport.js?v=7';
-import { createSchool } from './school-scene.js?v=7';
-import { schoolSky } from './school-materials.js?v=7';
-import { createGameHub } from './game-core.js?v=7';
+import { PeerTransport } from './peer-transport.js?v=8';
+import { createSchool } from './school-scene.js?v=8';
+import { schoolSky } from './school-materials.js?v=8';
+import { createGameHub } from './game-core.js?v=8';
 const $=id=>document.getElementById(id);
 let socket, myId, state, lastEvent, wasPlaying=false, sounds=false, audio, toastTimer, eventTimer, exploring=false;
 let yaw=0,pitch=0;
@@ -28,7 +28,7 @@ function avatar(p,demo=false){const g=new THREE.Group();const mat=new THREE.Mesh
   const legs=[];for(const x of [-.18,.18]){const l=new THREE.Mesh(new THREE.CapsuleGeometry(.115,.35,3,6),dark);l.position.set(x,.4,0);l.castShadow=true;g.add(l);legs.push(l);const arm=new THREE.Mesh(new THREE.CapsuleGeometry(.09,.36,3,6),mat);arm.position.set(x*2.5,1.05,0);g.add(arm);legs.push(arm);}
   const ring=new THREE.Mesh(new THREE.TorusGeometry(.7,.055,8,48),new THREE.MeshBasicMaterial({color:'#ff6b90'}));ring.rotation.x=Math.PI/2;ring.position.y=.09;g.add(ring);
   const marker=new THREE.Mesh(new THREE.OctahedronGeometry(.16),new THREE.MeshBasicMaterial({color:'#e5d6ff'}));marker.position.y=3.1;g.add(marker);marker.visible=false;
-  const tag=label(p.name,p.color);g.add(tag);g.position.set(p.x,0,p.z);arena.add(g);return {g,ring,marker,legs,label:tag,demo};
+  const tag=label(p.name,p.color);g.add(tag);g.position.set(p.x,p.y||0,p.z);arena.add(g);return {g,ring,marker,legs,label:tag,demo,height:p.y||0};
 }
 const demos=[{id:'d1',name:'RUNNER',color:'#b49aff',x:3,z:5},{id:'d2',name:'CATCH ME',color:'#69e3d2',x:-2,z:8},{id:'d3',name:'LET’S PLAY',color:'#ffc477',x:9,z:0}].map(p=>avatar(p,true));
 demos[0].ring.visible=true;demos[1].ring.visible=false;demos[2].ring.visible=false;
@@ -115,9 +115,9 @@ for(const type of ['pointerup','pointercancel','lostpointercapture'])renderer.do
 document.addEventListener('pointerlockchange',()=>{$('look').textContent=document.pointerLockElement?'Escで解除':'見回す';clearInputs();});
 const clock=new THREE.Clock(),camTarget=new THREE.Vector3();let elapsed=0,shadowTimer=1;
 function frame(){requestAnimationFrame(frame);if(!myId){if(idleFrames<=0)return;idleFrames--;}const dt=Math.min(clock.getDelta(),.05);elapsed+=dt;
-  for(const a of avatars.values()){const p=a.target;if(!p)continue;const old=a.g.position.clone();a.g.position.x=THREE.MathUtils.damp(a.g.position.x,p.x,20,dt);a.g.position.z=THREE.MathUtils.damp(a.g.position.z,p.z,20,dt);let angle=p.angle-a.g.rotation.y;angle=Math.atan2(Math.sin(angle),Math.cos(angle));a.g.rotation.y+=angle*Math.min(1,dt*15);const moving=old.distanceTo(a.g.position)>.003;a.legs.forEach((l,j)=>l.rotation.x=moving?Math.sin(elapsed*(8+p.boost*8)+(j%2)*Math.PI)*.6:0);a.g.position.y=moving?Math.abs(Math.sin(elapsed*12))*.04:0;}
-  if(myId){if(keys.has('KeyQ'))yaw+=dt*1.7;if(keys.has('KeyE'))yaw-=dt*1.7;const me=avatars.get(myId);if(me){camera.position.set(me.g.position.x,1.65,me.g.position.z);camera.rotation.set(pitch,yaw,0,'YXZ');}}
+  for(const a of avatars.values()){const p=a.target;if(!p)continue;const old=a.g.position.clone();a.g.position.x=THREE.MathUtils.damp(a.g.position.x,p.x,20,dt);a.g.position.z=THREE.MathUtils.damp(a.g.position.z,p.z,20,dt);a.height=THREE.MathUtils.damp(a.height,p.y||0,20,dt);let angle=p.angle-a.g.rotation.y;angle=Math.atan2(Math.sin(angle),Math.cos(angle));a.g.rotation.y+=angle*Math.min(1,dt*15);const moving=old.distanceTo(a.g.position)>.003;a.legs.forEach((l,j)=>l.rotation.x=moving?Math.sin(elapsed*(8+p.boost*8)+(j%2)*Math.PI)*.6:0);a.g.position.y=a.height+(moving?Math.abs(Math.sin(elapsed*12))*.04:0);}
+  if(myId){if(keys.has('KeyQ'))yaw+=dt*1.7;if(keys.has('KeyE'))yaw-=dt*1.7;const me=avatars.get(myId);if(me){camera.position.set(me.g.position.x,me.height+1.65,me.g.position.z);camera.rotation.set(pitch,yaw,0,'YXZ');}}
   else{camera.position.lerp(camTarget.set(80,58,68),dt*2);camera.lookAt(-7,3,-23);}
-  shadowTimer+=dt;if(shadowTimer>.25){const x=myId?camera.position.x:0,z=myId?camera.position.z:0;sun.position.set(x-40,65,z+30);sun.target.position.set(x,0,z);sun.target.updateMatrixWorld();renderer.shadowMap.needsUpdate=true;shadowTimer=0;}
+  shadowTimer+=dt;if(shadowTimer>.25){const x=myId?camera.position.x:0,y=myId?camera.position.y-1.65:0,z=myId?camera.position.z:0;sun.position.set(x-40,y+65,z+30);sun.target.position.set(x,y,z);sun.target.updateMatrixWorld();renderer.shadowMap.needsUpdate=true;shadowTimer=0;}
   renderer.render(scene,camera);
 }connect();frame();

@@ -1,6 +1,8 @@
 // Official reference: https://www2.u-gakugei.ac.jp/~takechu/building-info
 // Room names, floor assignments, L-shaped massing and turf are referenced;
 // dimensions, door positions and room order are an approximation for this game.
+import {FLOORS,STAIR,UPPER_SOLIDS,UPPER_ROOMS,UPPER_CORRIDORS,floorAtHeight,inStairFootprint,stairSurfaces,onUpperFloor} from './school-floors.js?v=8';
+export {FLOORS,STAIR,UPPER_SOLIDS,UPPER_ROOMS,UPPER_CORRIDORS,floorAtHeight};
 export const BOUNDS={minX:-72,maxX:72,minZ:-90,maxZ:38};
 export const SPAWNS=[{x:0,z:12},{x:3,z:14},{x:-3,z:14},{x:6,z:12},{x:-6,z:12}];
 export const NOTICE_BOARD={x:0,z:6,y:1.9,width:3.8,height:2.8,depth:.3};
@@ -43,7 +45,7 @@ function wallLine(axis,fixed,start,end,openings=[],windows=false){
  }segment(edge,end);
 }
 // A continuous 3.4 m corridor runs past all first-floor rooms and turns west.
-wallLine('x',-5,-42,30,[{at:-40.3,width:2.4,label:'校庭へ'},{at:0,width:4.4,label:'竹早中学校'}],true);
+wallLine('x',-5,-42,30,[{at:-40.3,width:2.4,label:'校庭へ'},{at:0,width:4.4,label:'竹早中学校'},{at:26,width:6,label:'階段 1F'}],true);
 wallLine('x',-8.4,-38.6,30,ROOMS.slice(0,6).map(r=>({at:r.doorX,width:2.4,label:r.name})));
 wallLine('x',-18,-38.6,30,[],true);
 for(const x of [-30,-18,-6,6,20])wallLine('z',x,-18,-8.4);
@@ -57,6 +59,8 @@ wallLine('x',-47,-42,-38.6,[{at:-40.3,width:2.4,label:'下校庭へ'}]);
 for(const z of [-46,-37,-28,-19])block(-26.2,z,.48,.48,3.8,'#e8e1ce',1.9,'column');
 // Gym shares its east wall and doorway with the west corridor: no doubled wall.
 wallLine('z',-68,-46,-12,[],true);wallLine('x',-46,-68,-42,[],true);wallLine('x',-12,-68,-42,[],true);
+wallLine('z',22,-5,8,[],true);wallLine('z',30,-5,8,[],true);wallLine('x',8,22,30,[],true);
+block(28,-2,2.4,.08,1.1,'#a6afaa',.55,'railing');
 block(-55,-43.8,18,3,.8,'#d9ac73',.4,'stage');
 // Furniture leaves a clear entrance aisle in every room.
 for(const r of ROOMS.filter(r=>['japanese','sugoi'].includes(r.kind)))for(const dx of [-3.6,-1.8,0,1.8,3.6])for(const dz of [-2,0,2]){
@@ -78,6 +82,17 @@ for(const [x,z] of TREES)block(x,z,2.4,2.4,.45,'#b9b1a3',.225,'planter');
 for(const [x,z] of [[-14,19],[19,20],[-11,-29]])block(x,z,3,.7,.5,'#a97e59',.25,'bench');
 block(NOTICE_BOARD.x,NOTICE_BOARD.z,NOTICE_BOARD.width+.16,NOTICE_BOARD.depth,NOTICE_BOARD.height+.16,'#284c48',NOTICE_BOARD.y,'notice-board');
 export const OBSTACLES=SOLIDS.map(b=>[b.x,b.z,b.w,b.d]);
-export function canStand(x,z){return Number.isFinite(x)&&Number.isFinite(z)&&x>BOUNDS.minX+.5&&x<BOUNDS.maxX-.5&&z>BOUNDS.minZ+.5&&z<BOUNDS.maxZ-.5&&!OBSTACLES.some(([ox,oz,w,d])=>Math.abs(x-ox)<w/2+.42&&Math.abs(z-oz)<d/2+.42);}
+const ALL_SOLIDS=[...SOLIDS,...UPPER_SOLIDS];
+function blocked(x,z,y){return ALL_SOLIDS.some(b=>{const bottom=(b.base||0)+b.y-b.h/2,top=bottom+b.h;return top>y+.12&&bottom<y+1.7&&Math.abs(x-b.x)<b.w/2+.42&&Math.abs(z-b.z)<b.d/2+.42;});}
+// Only nearby supporting surfaces can be reached. This prevents stair shortcuts,
+// stepping through a ceiling or walking off an upper floor into empty space.
+export function walkHeight(x,z,y=0){
+ if(![x,z,y].every(Number.isFinite)||x<=BOUNDS.minX+.5||x>=BOUNDS.maxX-.5||z<=BOUNDS.minZ+.5||z>=BOUNDS.maxZ-.5)return null;
+ const heights=stairSurfaces(x,z);
+ if(!inStairFootprint(x,z)||z<=STAIR.startZ){heights.push(0);if(onUpperFloor(x,z))for(const f of FLOORS.slice(1))heights.push(f.y);}
+ const candidates=heights.filter(h=>Math.abs(h-y)<=.24&&!blocked(x,z,h));
+ return candidates.length?candidates.reduce((best,h)=>Math.abs(h-y)<Math.abs(best-y)?h:best):null;
+}
+export function canStand(x,z,y=0){return walkHeight(x,z,y)!==null;}
 function inside(r,x,z){return Math.abs(x-r.x)<r.w/2&&Math.abs(z-r.z)<r.d/2;}
-export function locationAt(x,z){for(const r of ROOMS)if(inside(r,x,z))return r.name;for(const r of CORRIDORS)if(inside(r,x,z))return r.name;if(inside(PILOTI,x,z))return 'ピロティー';if(inside(YARD,x,z))return '下校庭';if(z<-18)return '中庭';return '校舎アプローチ';}
+export function locationAt(x,z,y=0){const floor=floorAtHeight(y);if(inStairFootprint(x,z))return floor+'F 階段';if(floor>1){for(const r of UPPER_ROOMS.filter(r=>r.floor===floor))if(inside(r,x,z))return floor+'F '+r.name;for(const r of UPPER_CORRIDORS.filter(r=>r.floor===floor))if(inside(r,x,z))return floor+'F 廊下';return floor===5?'5F 屋上':floor+'F 共用部分';}for(const r of ROOMS)if(inside(r,x,z))return r.name;for(const r of CORRIDORS)if(inside(r,x,z))return r.name;if(inside(PILOTI,x,z))return 'ピロティー';if(inside(YARD,x,z))return '下校庭';if(z<-18)return '中庭';return '校舎アプローチ';}

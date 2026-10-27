@@ -11,7 +11,7 @@ export function createGameServer({roundMs = 120000, allowedOrigins = (process.en
   const server = http.createServer(async (req,res) => {
     const pathname = new URL(req.url,'http://local').pathname;
     if (pathname === '/health') { res.writeHead(200,{'Content-Type':'application/json'});res.end('{"ok":true}');return; }
-    const files = {'/':'index.html','/style.css':'style.css','/app.js':'app.js','/config.js':'config.js','/game-core.js':'game-core.js','/peer-transport.js':'peer-transport.js','/school-map.js':'school-map.js','/school-scene.js':'school-scene.js','/school-materials.js':'school-materials.js','/spawn-guide.js':'spawn-guide.js'};
+    const files = {'/':'index.html','/style.css':'style.css','/app.js':'app.js','/config.js':'config.js','/game-core.js':'game-core.js','/peer-transport.js':'peer-transport.js','/school-map.js':'school-map.js','/school-floors.js':'school-floors.js','/school-scene.js':'school-scene.js','/school-materials.js':'school-materials.js','/spawn-guide.js':'spawn-guide.js'};
     try {
       const file = pathname === '/vendor/peerjs.js' ? fileURLToPath(new URL('./node_modules/peerjs/dist/peerjs.min.js', import.meta.url)) : pathname === '/vendor/three.js' ? fileURLToPath(new URL('./node_modules/three/build/three.module.js', import.meta.url)) : pathname === '/vendor/three.core.js' ? fileURLToPath(new URL('./node_modules/three/build/three.core.js', import.meta.url)) : files[pathname] && root+files[pathname];
       if(!file){res.writeHead(404);res.end('Not found');return;}

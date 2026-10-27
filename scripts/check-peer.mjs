@@ -18,7 +18,8 @@ if(process.argv.includes('--signal')){
       const relative=path.slice(6)||'index.html';
       if(relative.includes('..')){res.writeHead(404).end();return;}
       const ice=process.env.TEST_TURN_URL?[{urls:process.env.TEST_TURN_URL,username:process.env.TEST_TURN_USER,credential:process.env.TEST_TURN_PASSWORD}]:[];
-      const body=relative==='config.js'?'window.NEON_TAG_CONFIG='+JSON.stringify({transport:'peer',peerOptions:{host:'127.0.0.1',port,path:'/',secure:false,debug:1,config:{iceServers:ice,...(ice.length?{iceTransportPolicy:'relay'}:{})}}})+';':await readFile(new URL('../docs/'+relative,import.meta.url));
+      let body=relative==='config.js'?'window.NEON_TAG_CONFIG='+JSON.stringify({transport:'peer',peerOptions:{host:'127.0.0.1',port,path:'/',secure:false,debug:1,config:{iceServers:ice,...(ice.length?{iceTransportPolicy:'relay'}:{})}}})+';':await readFile(new URL('../docs/'+relative,import.meta.url));
+      if(relative==='app.js')body=body.toString()+"\nwindow.__rtcSchoolTest={get state(){return state},get avatars(){return avatars},get transport(){return socket},camera};";
       res.setHeader('Content-Type',relative.endsWith('.js')?'text/javascript':relative.endsWith('.css')?'text/css':'text/html');res.end(body);
     }catch{res.writeHead(404).end();}});
     await new Promise(r=>server.listen(0,'127.0.0.1',r));
@@ -29,7 +30,7 @@ if(process.argv.includes('--signal')){
     await host.fill('#name','ホスト');await host.click('#create');await host.waitForFunction(()=>!document.querySelector('#game-ui').hidden);
     await host.click('#menu-toggle');const code=(await host.locator('#copy').textContent()).split(' ')[0];assert.match(code,/^[A-F0-9]{6}$/);
     await guest.fill('#name','ゲスト');await guest.fill('#code',code);await guest.click('#join');try{await host.waitForFunction(()=>document.querySelector('#count').textContent==='2 / 5');}catch(e){console.error('RTC',await guest.evaluate(()=>{const t=window.debugPeerTransport,c=t?.joining||t?.guest,p=c?.peerConnection;return {peer:t?.peer.id,conn:c?.open,ice:p?.iceConnectionState,signal:p?.signalingState};}));console.error('HOST',await host.locator('#toast').textContent(),'GUEST',await guest.locator('#error').textContent(),await guest.locator('#toast').textContent());throw e;}
-    const extraResults=await host.evaluate(async({code})=>{const {PeerTransport}=await import('./peer-transport.js?v=7');window.testPeers=[];const results=[];
+    const extraResults=await host.evaluate(async({code})=>{const {PeerTransport}=await import('./peer-transport.js?v=8');window.testPeers=[];const results=[];
       for(let i=0;i<4;i++){const transport=new PeerTransport(window.NEON_TAG_CONFIG.peerOptions);window.testPeers.push(transport);await new Promise((r,j)=>{transport.addEventListener('open',r,{once:true});transport.addEventListener('error',()=>j(new Error('peer open failed')),{once:true});});
         const joined=new Promise((r,j)=>{const timeout=setTimeout(()=>j(new Error('join timed out')),10000);transport.addEventListener('message',({data})=>{const m=JSON.parse(data);if(['welcome','error'].includes(m.type)){clearTimeout(timeout);r(m);}});});transport.send(JSON.stringify({type:'join',code,name:'追加'+i}));results.push(await joined);}
       return results;
@@ -43,7 +44,13 @@ if(process.argv.includes('--signal')){
     await Promise.all([guest.waitForFunction(()=>parseFloat(document.querySelector('#speed').textContent)>3.2,{},{timeout:60000}),guest.evaluate(()=>new Promise(resolve=>{let taps=0;const timer=setInterval(()=>{document.querySelector('#dash').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,cancelable:true,pointerType:'touch'}));if(++taps===8){clearInterval(timer);resolve();}},90);}))]);
     // Full game state and scores are synchronized over actual RTCDataChannels.
     await guest.waitForFunction(()=>document.querySelector('#timer').textContent<'02:00');
+    // Move the authoritative host to a valid second-floor corridor. The guest
+    // must receive its height over RTC and place the remote avatar on that floor.
+    const upperPlayer=await host.evaluate(()=>{const hub=window.__rtcSchoolTest.transport.hub,room=[...hub.rooms.values()][0],p=room.players.get(room.host);Object.assign(p,{x:26,z:-6.7,y:4,boost:0,input:{x:0,z:0}});return p.id;});
+    await guest.waitForFunction(id=>{const t=window.__rtcSchoolTest,p=t.state?.players.find(p=>p.id===id),a=t.avatars.get(id);return p?.y===4&&p.floor===2&&Math.abs(a?.g.position.y-4)<.05;},upperPlayer,{timeout:60000,polling:20});
+    await host.waitForFunction(()=>Math.abs(window.__rtcSchoolTest.camera.position.y-5.65)<.05,{},{timeout:60000,polling:20});
+    assert.ok(await guest.evaluate(()=>Math.abs(window.__rtcSchoolTest.camera.position.y-1.65)<.05),'the ground-floor guest stays on its own floor');
     await host.close();await guest.waitForFunction(()=>!document.querySelector('#landing').hidden);
-    assert.deepEqual(errors,[]);console.log('PASS: static subpath; 5 RTC players; sixth rejected; round start; mobile tap boost; host disconnect; no browser errors.');
+    assert.deepEqual(errors,[]);console.log('PASS: static subpath; 5 RTC players; sixth rejected; round start; mobile tap boost; second-floor height, remote avatar and host eye height; host disconnect; no browser errors.');
   }finally{await browser?.close();server?.closeAllConnections();if(server)await new Promise(r=>server.close(r));child.kill();}
 }
