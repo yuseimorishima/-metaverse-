@@ -28,19 +28,20 @@ wall(51.5,-25,27,.45);wall(65,-2.5,.45,45);wall(51.5,20,27,.45);wall(38,-10,.45,
 block(38,8,.45,6,3,'#e8e1ce',7.5,false);
 // All room assignments are provisional until the reference school's plan is supplied.
 // School furniture is solid, with wide paths between rows.
-for(const room of ROOMS.slice(0,2))for(const x of [-5,0,5])for(const z of [-5,0,5]){
-  block(room.x+x,room.z+z,2,1.4,.8,room.kind==='science'?'#b0c2bb':'#d9ac73');
-  block(room.x+x,room.z+z+1.5,.9,.85,.5,'#688d91');
+for(const room of ROOMS.slice(0,2))for(const x of [-6,-3,0,3,6])for(const z of [-6,-3,0,3,6]){
+  block(room.x+x,room.z+z,1.2,.7,.76,room.kind==='science'?'#b0c2bb':'#d9ac73');
+  block(room.x+x,room.z+z+.95,.5,.5,.5,'#688d91');
 }
 for(const x of [-7,-3,1,5]){block(-1.5+x,-28,1.1,8,2.4,'#a97e59');}
 for(const z of [-20,-15])for(const x of [-5,3])block(-1.5+x,z,3,1.5,.8,'#d9ac73');
 for(const x of [14,23])for(const z of [-28,-20])block(x,z,3.5,2.5,.85,'#c89c72');
 for(const x of [-48,-43,-38])for(const z of [0,5,10]){block(x,z,2,1.4,.8,'#d9ac73');block(x,z+1.5,.9,.85,.5,'#688d91');}
 block(-43,31,15,3,.7,'#a97e59');block(-49,23,3,2,1.2,'#3b4351');
-// Courtyard fountain and planters.
+// Courtyard planters; no unverified fountain is assumed.
 block(12,14,6,6,.65,'#c6bdb0');
 for(const [x,z] of [[-15,23],[24,27],[30,-1],[-59,-26],[-59,12],[68,30]])block(x,z,3.5,3.5,.6,'#b9b1a3');
 for(const [x,z] of [[-12,4],[24,4],[0,29]])block(x,z,4,1,.55,'#a97e59');
+for(const x of [-5,5])block(x,-8.4,2,.48,1.5,'#a6afaa');
 // Balcony-height lintels and decorative windows never block an open door.
 export const OBSTACLES=SOLIDS.map(b=>[b.x,b.z,b.w,b.d]);
 export function canStand(x,z){return Number.isFinite(x)&&Number.isFinite(z)&&x>BOUNDS.minX+.5&&x<BOUNDS.maxX-.5&&z>BOUNDS.minZ+.5&&z<BOUNDS.maxZ-.5&&!OBSTACLES.some(([ox,oz,w,d])=>Math.abs(x-ox)<w/2+.42&&Math.abs(z-oz)<d/2+.42);}

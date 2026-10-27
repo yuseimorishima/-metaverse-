@@ -9,3 +9,7 @@ test('every room, corridor and schoolyard can be reached from the courtyard',()=
  for(const r of ROOMS){const targets=r.kind==='gym'?[[40,8]]:r.doorX===-32?[[-34,r.z]]:[[Math.round(r.doorX),-14]];assert.ok(targets.some(([x,z])=>visited.has(x+','+z)),r.name+' must be connected');}
  assert.ok(visited.has('22,55'));assert.equal(locationAt(0,-8),'校舎の廊下');assert.equal(locationAt(45,0),'体育館（仮）');assert.equal(locationAt(22,55),'校庭');
 });
+
+test('a delayed render tick still moves the player and cannot tunnel through a wall',async()=>{
+ const {createGameHub}=await import('../public/game-core.js');const hub=createGameHub({send:()=>{}}),client={};hub.message(client,{type:'create'});const p=hub.rooms.get(client.room).players.get(client.pid);p.x=-48;p.z=-4;hub.message(client,{type:'input',x:0,z:-1});hub.tick(Date.now()+1000);assert.ok(p.z<-4,'movement is advanced despite a delayed frame');assert.ok(p.z>=-4.405,'the wall still blocks each substep');
+});
