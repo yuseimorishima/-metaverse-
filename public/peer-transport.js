@@ -1,5 +1,5 @@
-import { createGameHub } from './game-core.js?v=6';
-const PREFIX='neon-tag-v5-guide-';
+import { createGameHub } from './game-core.js?v=7';
+const PREFIX='neon-tag-v6-takehaya-';
 // Same interface as the WebSocket transport so both modes use the same UI and rules.
 export class PeerTransport extends EventTarget {
   readyState=0;

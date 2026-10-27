@@ -1,14 +1,14 @@
 import * as THREE from './vendor/three.js';
-import { PeerTransport } from './peer-transport.js?v=6';
-import { createSchool } from './school-scene.js?v=6';
-import { schoolSky } from './school-materials.js?v=6';
-import { createGameHub } from './game-core.js?v=6';
+import { PeerTransport } from './peer-transport.js?v=7';
+import { createSchool } from './school-scene.js?v=7';
+import { schoolSky } from './school-materials.js?v=7';
+import { createGameHub } from './game-core.js?v=7';
 const $=id=>document.getElementById(id);
 let socket, myId, state, lastEvent, wasPlaying=false, sounds=false, audio, toastTimer, eventTimer, exploring=false;
 let yaw=0,pitch=0;
 const keys=new Set(), pointers=new Map(),avatars=new Map();
 const scene=new THREE.Scene();scene.background=new THREE.Color('#bfd9d8');scene.fog=new THREE.Fog('#bfd9d8',85,210);
-const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.08,260);camera.rotation.order='YXZ';camera.position.set(85,78,105);camera.lookAt(-5,0,5);
+const camera=new THREE.PerspectiveCamera(72,innerWidth/innerHeight,.08,260);camera.rotation.order='YXZ';camera.position.set(80,58,68);camera.lookAt(-7,3,-23);
 let renderer;
 try{renderer=new THREE.WebGLRenderer({antialias:true});}catch{$('error').textContent='3D表示にはWebGL対応ブラウザが必要です';throw new Error('WebGL unavailable');}
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.shadowMap.autoUpdate=false;renderer.shadowMap.needsUpdate=true;$('world').append(renderer.domElement);
@@ -117,7 +117,7 @@ const clock=new THREE.Clock(),camTarget=new THREE.Vector3();let elapsed=0,shadow
 function frame(){requestAnimationFrame(frame);if(!myId){if(idleFrames<=0)return;idleFrames--;}const dt=Math.min(clock.getDelta(),.05);elapsed+=dt;
   for(const a of avatars.values()){const p=a.target;if(!p)continue;const old=a.g.position.clone();a.g.position.x=THREE.MathUtils.damp(a.g.position.x,p.x,20,dt);a.g.position.z=THREE.MathUtils.damp(a.g.position.z,p.z,20,dt);let angle=p.angle-a.g.rotation.y;angle=Math.atan2(Math.sin(angle),Math.cos(angle));a.g.rotation.y+=angle*Math.min(1,dt*15);const moving=old.distanceTo(a.g.position)>.003;a.legs.forEach((l,j)=>l.rotation.x=moving?Math.sin(elapsed*(8+p.boost*8)+(j%2)*Math.PI)*.6:0);a.g.position.y=moving?Math.abs(Math.sin(elapsed*12))*.04:0;}
   if(myId){if(keys.has('KeyQ'))yaw+=dt*1.7;if(keys.has('KeyE'))yaw-=dt*1.7;const me=avatars.get(myId);if(me){camera.position.set(me.g.position.x,1.65,me.g.position.z);camera.rotation.set(pitch,yaw,0,'YXZ');}}
-  else{camera.position.lerp(camTarget.set(85,78,105),dt*2);camera.lookAt(-5,0,5);}
+  else{camera.position.lerp(camTarget.set(80,58,68),dt*2);camera.lookAt(-7,3,-23);}
   shadowTimer+=dt;if(shadowTimer>.25){const x=myId?camera.position.x:0,z=myId?camera.position.z:0;sun.position.set(x-40,65,z+30);sun.target.position.set(x,0,z);sun.target.updateMatrixWorld();renderer.shadowMap.needsUpdate=true;shadowTimer=0;}
   renderer.render(scene,camera);
 }connect();frame();
