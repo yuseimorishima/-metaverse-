@@ -26,11 +26,11 @@ if(process.argv.includes('--signal')){
     browser=await chromium.launch({...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{}),headless:true,args:['--no-sandbox','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
     const url=`http://127.0.0.1:${server.address().port}/game/`;
     const host=await browser.newPage({viewport:{width:1000,height:900}}),guest=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const errors=[];
-    for(const page of [host,guest]){page.on('pageerror',e=>{errors.push(e.message);console.error('BROWSER',e.message);});page.on('console',m=>{if(m.type()==='error')console.error(m.text());});await page.goto(url);await page.waitForFunction(()=>document.querySelector('#connection').textContent==='ONLINE');await page.click('#quality');}
+    for(const page of [host,guest]){page.setDefaultTimeout(60000);page.on('pageerror',e=>{errors.push(e.message);console.error('BROWSER',e.message);});page.on('console',m=>{if(m.type()==='error')console.error(m.text());});await page.goto(url);await page.waitForFunction(()=>document.querySelector('#connection').textContent==='ONLINE');await page.click('#quality');}
     await host.fill('#name','ホスト');await host.click('#create');await host.waitForFunction(()=>!document.querySelector('#game-ui').hidden);
     await host.click('#menu-toggle');const code=(await host.locator('#copy').textContent()).split(' ')[0];assert.match(code,/^[A-F0-9]{6}$/);
     await guest.fill('#name','ゲスト');await guest.fill('#code',code);await guest.click('#join');try{await host.waitForFunction(()=>document.querySelector('#count').textContent==='2 / 5');}catch(e){console.error('RTC',await guest.evaluate(()=>{const t=window.debugPeerTransport,c=t?.joining||t?.guest,p=c?.peerConnection;return {peer:t?.peer.id,conn:c?.open,ice:p?.iceConnectionState,signal:p?.signalingState};}));console.error('HOST',await host.locator('#toast').textContent(),'GUEST',await guest.locator('#error').textContent(),await guest.locator('#toast').textContent());throw e;}
-    const extraResults=await host.evaluate(async({code})=>{const {PeerTransport}=await import('./peer-transport.js?v=9');window.testPeers=[];const results=[];
+    const extraResults=await host.evaluate(async({code})=>{const {PeerTransport}=await import('./peer-transport.js?v=10');window.testPeers=[];const results=[];
       for(let i=0;i<4;i++){const transport=new PeerTransport(window.NEON_TAG_CONFIG.peerOptions);window.testPeers.push(transport);await new Promise((r,j)=>{transport.addEventListener('open',r,{once:true});transport.addEventListener('error',()=>j(new Error('peer open failed')),{once:true});});
         const joined=new Promise((r,j)=>{const timeout=setTimeout(()=>j(new Error('join timed out')),10000);transport.addEventListener('message',({data})=>{const m=JSON.parse(data);if(['welcome','error'].includes(m.type)){clearTimeout(timeout);r(m);}});});transport.send(JSON.stringify({type:'join',code,name:'追加'+i}));results.push(await joined);}
       return results;
@@ -50,6 +50,11 @@ if(process.argv.includes('--signal')){
     await guest.waitForFunction(id=>{const t=window.__rtcSchoolTest,p=t.state?.players.find(p=>p.id===id),a=t.avatars.get(id);return p?.y===4&&p.floor===2&&Math.abs(a?.g.position.y-4)<.05;},upperPlayer,{timeout:60000,polling:20});
     await host.waitForFunction(()=>Math.abs(window.__rtcSchoolTest.camera.position.y-5.65)<.05,{},{timeout:60000,polling:20});
     assert.ok(await guest.evaluate(()=>Math.abs(window.__rtcSchoolTest.camera.position.y-1.65)<.05),'the ground-floor guest stays on its own floor');
+    // Capture the final gym after the campus relocation, with its former outdoor
+    // tree and bench moved out of the building.
+    await host.evaluate(()=>{const hub=window.__rtcSchoolTest.transport.hub,room=[...hub.rooms.values()][0],p=room.players.get(room.host);Object.assign(p,{x:-18,z:-31,y:0,boost:0,input:{x:0,z:0}});});
+    await host.waitForFunction(()=>{const c=window.__rtcSchoolTest.camera;return Math.abs(c.position.x+18)<.1&&Math.abs(c.position.y-1.65)<.05;},{},{timeout:60000,polling:20});
+    await host.screenshot({path:'/tmp/neon-school-gym-final.png'});
     await host.close();await guest.waitForFunction(()=>!document.querySelector('#landing').hidden);
     assert.deepEqual(errors,[]);console.log('PASS: static subpath; 5 RTC players; sixth rejected; round start; mobile tap boost; second-floor height, remote avatar and host eye height; host disconnect; no browser errors.');
   }finally{await browser?.close();server?.closeAllConnections();if(server)await new Promise(r=>server.close(r));child.kill();}

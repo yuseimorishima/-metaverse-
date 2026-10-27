@@ -39,10 +39,10 @@ test('rapid tapping can climb a flight without skipping a floor or clipping thro
 test('every upper-floor doorway and room is reachable from its staircase landing',()=>{
  for(const floor of FLOORS.slice(1)){
   const queue=[[26,-7]],visited=new Set(['26,-7']);
-  for(let i=0;i<queue.length;i++){const [x,z]=queue[i];for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,nz=z+dz,key=nx+','+nz;if(!visited.has(key)&&canStand(nx,nz,floor.y)){visited.add(key);queue.push([nx,nz]);}}}
+  for(let i=0;i<queue.length;i++){const [x,z]=queue[i];for(const [dx,dz] of [[.5,0],[-.5,0],[0,.5],[0,-.5]]){const nx=x+dx,nz=z+dz,key=nx+','+nz;if(!visited.has(key)&&canStand(nx,nz,floor.y)){visited.add(key);queue.push([nx,nz]);}}}
   for(const r of UPPER_ROOMS.filter(r=>r.floor===floor.id)){
    assert.ok(canStand(r.doorX,r.doorZ,floor.y),floor.id+'F '+r.name+' door');
-   const x=Math.round(r.doorX+(r.doorAxis==='z'?1:0)),z=Math.round(r.doorZ+(r.doorAxis==='z'?0:-1));
+   const x=Math.round(2*(r.doorX+(r.doorAxis==='z'?1:0)))/2,z=Math.round(2*(r.doorZ+(r.doorAxis==='z'?0:-1)))/2;
    assert.ok(visited.has(x+','+z),floor.id+'F '+r.name+' must be reachable');
   }
   for(const d of UPPER_DOORS.filter(d=>d.floor===floor.id))for(const offset of [-.8,0,.8])assert.ok(canStand(d.x+(d.axis==='z'?offset:0),d.z+(d.axis==='x'?offset:0),floor.y),d.floor+'F '+d.label+' approach '+offset);

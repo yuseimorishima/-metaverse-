@@ -1,6 +1,6 @@
 import * as THREE from './vendor/three.js';
-import {BOUNDS,ROOMS,SOLIDS,SPAWNS,NOTICE_BOARD,CORRIDORS,PILOTI,COURTYARD,YARD,WALKWAYS} from './school-map.js?v=9';
-import {FLOORS,STAIR} from './school-floors.js?v=9';
+import {BOUNDS,ROOMS,SOLIDS,SPAWNS,NOTICE_BOARD,CORRIDORS,ENTRANCE_HALL,PILOTI,COURTYARD,YARD,WALKWAYS} from './school-map.js?v=10';
+import {FLOORS,STAIR} from './school-floors.js?v=10';
 
 // A printed, static map in the world: no screen overlay or live player tracking.
 export function createSpawnGuide(){
@@ -11,7 +11,7 @@ export function createSpawnGuide(){
  function rect(r){c.fillRect(px(r.x-r.w/2),pz(r.z-r.d/2),r.w*sx,r.d*sz);}
  c.fillStyle='#ece8df';for(const r of WALKWAYS)rect(r);rect(COURTYARD);
  c.fillStyle='#89b29a';rect(YARD);c.fillStyle='#365b44';c.font='bold 42px sans-serif';c.fillText('下校庭（人工芝）',px(-13),pz(-65));
- c.fillStyle='#f4ecdb';for(const r of CORRIDORS)rect(r);rect(PILOTI);
+ c.fillStyle='#f4ecdb';for(const r of CORRIDORS)rect(r);rect(PILOTI);c.fillStyle='#e1ceb0';rect(ENTRANCE_HALL);c.fillStyle='#6e543a';c.font='bold 27px sans-serif';c.fillText('玄関・下駄箱',px(-7),pz(1));
  for(const r of ROOMS){
   c.fillStyle=r.kind==='gym'?'#cad7de':'#b4cec5';c.fillRect(px(r.x-r.w/2),pz(r.z-r.d/2),r.w*sx,r.d*sz);
   const x=px(r.x),z=pz(r.z);c.fillStyle='#2c514b';c.font=r.kind==='gym'?'bold 35px sans-serif':'bold 22px sans-serif';c.textAlign='center';c.fillText(r.name,x,z+8,Math.max(40,r.w*sx-6));c.textAlign='left';
@@ -19,7 +19,7 @@ export function createSpawnGuide(){
  c.fillStyle='#d7b483';rect({x:26,z:1.5,w:8,d:13});c.fillStyle='#785b35';c.font='bold 30px sans-serif';c.fillText('階段 1F ⇄ 5F',px(31),pz(1));
  c.fillStyle='#486960';for(const b of SOLIDS.filter(b=>b.kind==='wall'||b.kind==='column'))c.fillRect(px(b.x-b.w/2),pz(b.z-b.d/2),Math.max(3,b.w*sx),Math.max(3,b.d*sz));
  const spawn=SPAWNS[0],x=px(spawn.x),z=pz(spawn.z);c.fillStyle='#b64d4f';c.beginPath();c.arc(x,z,19,0,Math.PI*2);c.fill();c.strokeStyle='#b64d4f';c.lineWidth=5;c.beginPath();c.moveTo(x,z);c.lineTo(x-70,z+60);c.lineTo(x-250,z+60);c.stroke();c.font='bold 37px sans-serif';c.fillText('スポーン地点',x-290,z+108);
- c.fillStyle='#53695b';c.font='32px sans-serif';c.fillText('中庭',px(-4),pz(-32));c.fillText('ピロティー',px(-37),pz(-21));c.fillText('校舎アプローチ',px(8),pz(23));
+ c.fillStyle='#53695b';c.font='32px sans-serif';c.fillText('通路',px(14),pz(-32));c.fillText('ピロティー',px(-37),pz(-21));c.fillText('校舎アプローチ',px(8),pz(23));
  const legendX=1360;c.fillStyle='#284c48';c.font='bold 50px sans-serif';c.fillText('各階の案内',legendX,350);
  const lines=[['相談・国語・SUGOI・音楽','技術・用務員・体育館'],['1A・1B・1C・1D','保健・調理・被服・職員室など'],['2A・2B・2C・2D','理科教室・Dルーム・メディアセンター'],['3A・3B・3C・3D','英語・美術・社会・視聴覚など'],['実習生室・会議室','屋上テラス']];
  FLOORS.forEach((f,i)=>{const y=423+i*126;c.fillStyle=f.color;c.font='bold 42px sans-serif';c.fillText(f.id+'F',legendX,y);c.fillStyle='#364c43';c.font='29px sans-serif';for(let j=0;j<2;j++)c.fillText(lines[i][j],legendX+77,y-9+j*43);});
