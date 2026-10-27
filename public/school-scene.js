@@ -1,6 +1,7 @@
 import * as THREE from './vendor/three.js';
-import {SOLIDS,DECOR,ROOMS} from './school-map.js?v=5';
-import {createSchoolMaterials} from './school-materials.js?v=5';
+import {SOLIDS,DECOR,ROOMS} from './school-map.js?v=6';
+import {createSpawnGuide} from './spawn-guide.js?v=6';
+import {createSchoolMaterials} from './school-materials.js?v=6';
 export function createSchool(scene){
  const group=new THREE.Group();scene.add(group);const materials=createSchoolMaterials(),batches=new Map();
  const unitBox=new THREE.BoxGeometry(1,1,1).toNonIndexed(),unitCylinder=new THREE.CylinderGeometry(1,1,1,10).toNonIndexed(),unitSphere=new THREE.IcosahedronGeometry(1,2).toNonIndexed();
@@ -38,6 +39,7 @@ export function createSchool(scene){
   for(const y of [.16,.73,1.3,1.87])for(let z=b.z-b.d/2+.2;z<b.z+b.d/2-.1;z+=.19){const index=Math.abs(Math.floor(z*31+y*9)),bookKind=['paint','dark','wood','chalk'][index%4],height=.25+(index%5)*.025;for(const side of [-1,1])box(b.x+side*b.w*.25,y+height/2,z,b.w*.4,height,.15,bookKind);}
  }
  for(const b of SOLIDS){
+  if(b.kind==='notice-board'){box(b.x,b.y,b.z,b.w,b.h,b.d,'blackMetal');for(const dx of [-1.35,1.35])pole(b.x+dx,1.65,b.z,.065,3.3,'metal');continue;}
   if(b.color==='#e8e1ce'){wall(b);continue;}
   if(b.color==='#688d91'){chair(b);continue;}
   if(b.color==='#a97e59'&&b.z===-28){shelf(b);continue;}
@@ -92,5 +94,6 @@ export function createSchool(scene){
  for(const [kind,items] of batches){const positions=[],normals=[],uvs=[];for(const b of items){const p=b.shape.getAttribute('position'),n=b.shape.getAttribute('normal');for(let i=0;i<p.count;i++){const x=p.getX(i)*b.w+b.x,y=p.getY(i)*b.h+b.y,z=p.getZ(i)*b.d+b.z,nx=n.getX(i),ny=n.getY(i),nz=n.getZ(i);positions.push(x,y,z);normals.push(nx,ny,nz);if(Math.abs(ny)>.6)uvs.push(x*.5,z*.5);else if(Math.abs(nx)>.6)uvs.push(z*.5,y*.5);else uvs.push(x*.5,y*.5);}}
   const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));geometry.computeBoundingSphere();const mesh=new THREE.Mesh(geometry,materials[kind]);mesh.castShadow=kind!=='glass'&&kind!=='lamp';mesh.receiveShadow=true;group.add(mesh);
  }
+ group.add(createSpawnGuide());
  unitBox.dispose();unitCylinder.dispose();unitSphere.dispose();return group;
 }

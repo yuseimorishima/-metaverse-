@@ -1,6 +1,7 @@
 // Shared geometry: every solid used by the renderer is also used for collision.
 export const BOUNDS={minX:-72,maxX:72,minZ:-50,maxZ:78};
 export const SPAWNS=[{x:0,z:12},{x:3,z:14},{x:-3,z:14},{x:6,z:12},{x:-6,z:12}];
+export const NOTICE_BOARD={x:0,z:6,y:1.9,width:3.8,height:2.8,depth:.3};
 export const SOLIDS=[], DECOR=[];
 function block(x,z,w,d,h=3.8,color='#e8e1ce',y=h/2,solid=true){const b={x,z,w,d,h,color,y};(solid?SOLIDS:DECOR).push(b);return b;}
 function wall(x,z,w,d){return block(x,z,w,d);}
@@ -42,6 +43,7 @@ block(12,14,6,6,.65,'#c6bdb0');
 for(const [x,z] of [[-15,23],[24,27],[30,-1],[-59,-26],[-59,12],[68,30]])block(x,z,3.5,3.5,.6,'#b9b1a3');
 for(const [x,z] of [[-12,4],[24,4],[0,29]])block(x,z,4,1,.55,'#a97e59');
 for(const x of [-5,5])block(x,-8.4,2,.48,1.5,'#a6afaa');
+const guide=block(NOTICE_BOARD.x,NOTICE_BOARD.z,NOTICE_BOARD.width+.16,NOTICE_BOARD.depth,NOTICE_BOARD.height+.16,'#284c48',NOTICE_BOARD.y);guide.kind='notice-board';
 // Balcony-height lintels and decorative windows never block an open door.
 export const OBSTACLES=SOLIDS.map(b=>[b.x,b.z,b.w,b.d]);
 export function canStand(x,z){return Number.isFinite(x)&&Number.isFinite(z)&&x>BOUNDS.minX+.5&&x<BOUNDS.maxX-.5&&z>BOUNDS.minZ+.5&&z<BOUNDS.maxZ-.5&&!OBSTACLES.some(([ox,oz,w,d])=>Math.abs(x-ox)<w/2+.42&&Math.abs(z-oz)<d/2+.42);}

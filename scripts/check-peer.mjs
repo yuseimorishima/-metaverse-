@@ -27,15 +27,15 @@ if(process.argv.includes('--signal')){
     const host=await browser.newPage({viewport:{width:1000,height:900}}),guest=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});const errors=[];
     for(const page of [host,guest]){page.on('pageerror',e=>{errors.push(e.message);console.error('BROWSER',e.message);});page.on('console',m=>{if(m.type()==='error')console.error(m.text());});await page.goto(url);await page.waitForFunction(()=>document.querySelector('#connection').textContent==='ONLINE');await page.click('#quality');}
     await host.fill('#name','ホスト');await host.click('#create');await host.waitForFunction(()=>!document.querySelector('#game-ui').hidden);
-    const code=(await host.locator('#copy').textContent()).split(' ')[0];assert.match(code,/^[A-F0-9]{6}$/);
+    await host.click('#menu-toggle');const code=(await host.locator('#copy').textContent()).split(' ')[0];assert.match(code,/^[A-F0-9]{6}$/);
     await guest.fill('#name','ゲスト');await guest.fill('#code',code);await guest.click('#join');try{await host.waitForFunction(()=>document.querySelector('#count').textContent==='2 / 5');}catch(e){console.error('RTC',await guest.evaluate(()=>{const t=window.debugPeerTransport,c=t?.joining||t?.guest,p=c?.peerConnection;return {peer:t?.peer.id,conn:c?.open,ice:p?.iceConnectionState,signal:p?.signalingState};}));console.error('HOST',await host.locator('#toast').textContent(),'GUEST',await guest.locator('#error').textContent(),await guest.locator('#toast').textContent());throw e;}
-    const extraResults=await host.evaluate(async({code})=>{const {PeerTransport}=await import('./peer-transport.js?v=5');window.testPeers=[];const results=[];
+    const extraResults=await host.evaluate(async({code})=>{const {PeerTransport}=await import('./peer-transport.js?v=6');window.testPeers=[];const results=[];
       for(let i=0;i<4;i++){const transport=new PeerTransport(window.NEON_TAG_CONFIG.peerOptions);window.testPeers.push(transport);await new Promise((r,j)=>{transport.addEventListener('open',r,{once:true});transport.addEventListener('error',()=>j(new Error('peer open failed')),{once:true});});
         const joined=new Promise((r,j)=>{const timeout=setTimeout(()=>j(new Error('join timed out')),10000);transport.addEventListener('message',({data})=>{const m=JSON.parse(data);if(['welcome','error'].includes(m.type)){clearTimeout(timeout);r(m);}});});transport.send(JSON.stringify({type:'join',code,name:'追加'+i}));results.push(await joined);}
       return results;
     },{code});
     assert.deepEqual(extraResults.map(m=>m.type),['welcome','welcome','welcome','error']);assert.match(extraResults[3].message,/満員/);
-    await host.waitForFunction(()=>document.querySelector('#count').textContent==='5 / 5');await host.click('#start');await guest.waitForFunction(()=>document.querySelector('#phase-label').textContent!=='WAITING ROOM');
+    await host.waitForFunction(()=>document.querySelector('#count').textContent==='5 / 5');await host.click('#start');await guest.waitForFunction(()=>document.querySelector('#game-ui').dataset.phase==='playing');
     // Actual mobile touchscreen interaction is covered by check-school.mjs. Here DOM
     // pointer events avoid software-GPU input acknowledgements while retaining the
     // real button handler, WebRTC transport, host simulation and guest speed UI.

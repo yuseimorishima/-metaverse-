@@ -1,4 +1,4 @@
-import {OBSTACLES,SPAWNS,canStand} from './school-map.js?v=5';
+import {OBSTACLES,SPAWNS,canStand} from './school-map.js?v=6';
 export {OBSTACLES};
 const COLORS = ['#b49aff','#64ebda','#ffcc75','#ff88ba','#82baff'];
 const ROUND_MS = 120000;

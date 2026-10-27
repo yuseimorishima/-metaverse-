@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {SPAWNS,ROOMS,canStand,locationAt} from '../public/school-map.js';
+import {SPAWNS,ROOMS,NOTICE_BOARD,canStand,locationAt} from '../public/school-map.js';
 
 test('school spans more than 100 metres, all five spawns are walkable',()=>{for(const p of SPAWNS)assert.ok(canStand(p.x,p.z));assert.ok(canStand(68,70));assert.ok(!canStand(73,0));assert.ok(!canStand(NaN,0));});
 test('entrance and internal doors are walkable, walls and furniture block passage',()=>{assert.ok(canStand(0,-5));assert.ok(!canStand(-48,-5));for(const r of ROOMS){assert.ok(canStand(r.doorX,r.doorZ),r.name);}assert.ok(!canStand(-43.5,-23.5),'classroom desk');});
@@ -13,3 +13,6 @@ test('every room, corridor and schoolyard can be reached from the courtyard',()=
 test('a delayed render tick still moves the player and cannot tunnel through a wall',async()=>{
  const {createGameHub}=await import('../public/game-core.js');const hub=createGameHub({send:()=>{}}),client={};hub.message(client,{type:'create'});const p=hub.rooms.get(client.room).players.get(client.pid);p.x=-48;p.z=-4;hub.message(client,{type:'input',x:0,z:-1});hub.tick(Date.now()+1000);assert.ok(p.z<-4,'movement is advanced despite a delayed frame');assert.ok(p.z>=-4.405,'the wall still blocks each substep');
 });
+
+
+test('spawn guide has a solid footprint and leaves routes on either side',()=>{assert.ok(!canStand(NOTICE_BOARD.x,NOTICE_BOARD.z));for(const side of [-1,1])assert.ok(canStand(NOTICE_BOARD.x+side*(NOTICE_BOARD.width/2+.7),NOTICE_BOARD.z));for(const p of SPAWNS)assert.ok(canStand(p.x,p.z));});
